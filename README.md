@@ -2,10 +2,10 @@
 A conversational AI agent that recommends korean skincare products based on individual skin concerns, skin type and routine preferences.
 
 ## What it does
-Recommends Korean skincare products based on the user's skin concerns (acne, hyper pigmentation, dryness, sensitivity, aging)
-Suggests a night and morning routine based on the user's input
-Only recommends products from the dataset --> no hallucinated products
-Built with a RAG (Retrivial Augmented Generation) architecture
+- Recommends Korean skincare products based on the user's skin concerns (acne, hyper pigmentation, dryness, sensitivity, aging)
+- Suggests a night and morning routine based on the user's input
+- Only recommends products from the dataset --> no hallucinated products
+- Built with a RAG (Retrivial Augmented Generation) architecture
 
 ## How it works
 1. A dataset of korean skincare products was enriched using a LLM to filter attributes (skin concerns, skin type, key ingredients, when to use)
@@ -15,11 +15,11 @@ Built with a RAG (Retrivial Augmented Generation) architecture
   
 ## Tech Stack
 
-**Python**
-**Groq AI** (LLaMA 3.3 70B) --> conversational AI
-**ChromaDB** --> vector database for product search
-**Streamlit** --> web interface
-**Pandas** --> data processing
+-  **Python**
+-  **Groq AI** (LLaMA 3.3 70B) --> conversational AI
+-  **ChromaDB** --> vector database for product search
+-  **Streamlit** --> web interface
+-  **Pandas** --> data processing
 
 Product data sourced from [Soko Glam](https://sokoglam.com/) and enriched with additional popular korean skincare products from brands like Anua, Goodal, Round Lab, Skin1004, Beauty of Joseon.
 
