@@ -3,7 +3,7 @@ A conversational AI agent that recommends korean skincare products based on indi
 
 ## What it does
 Recommends Korean skincare products based on the user's skin concerns (acne, hyper pigmentation, dryness, sensitivity, aging)
-Suggest a night and morning routine based on the user's input
+Suggests a night and morning routine based on the user's input
 Only recommends products from the dataset --> no hallucinated products
 Built with a RAG (Retrivial Augmented Generation) architecture
 
