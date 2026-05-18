@@ -7,8 +7,7 @@ import time
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-df = pd.read_csv("productlist.csv")
-
+df = pd.read_csv("enriched_products.csv", encoding="utf-8-sig", dtype={"skin_concerns": str, "skin_type": str, "key_ingredients": str, "when_to_use": str})
 def enrich_product(description, product_type):
     prompt = f"""
 You are a skincare expert. Based on this product description and type, extract the following information.
@@ -54,19 +53,24 @@ def parse_response(text):
             result["when_to_use"] = line.replace("WHEN_TO_USE:", "").strip()
     return result
 
-results = []
+skipped = 0
+processed = 0
+
 for i, row in df.iterrows():
+    if pd.notna(row["skin_concerns"]) and str(row["skin_concerns"]).strip() != "":
+        skipped += 1
+        continue
+
     print(f"Processing {i+1}/{len(df)}: {row['product_name']}")
     raw = enrich_product(str(row["product_description"]), str(row["product_type"]))
     parsed = parse_response(raw)
-    results.append(parsed)
+
+    df.at[i, "skin_concerns"] = parsed["skin_concerns"]
+    df.at[i, "skin_type"] = parsed["skin_type"]
+    df.at[i, "key_ingredients"] = parsed["key_ingredients"]
+    df.at[i, "when_to_use"] = parsed["when_to_use"]
+    processed += 1
     time.sleep(2)
 
-enriched_df = df.copy()
-enriched_df["skin_concerns"] = [r["skin_concerns"] for r in results]
-enriched_df["skin_type"] = [r["skin_type"] for r in results]
-enriched_df["key_ingredients"] = [r["key_ingredients"] for r in results]
-enriched_df["when_to_use"] = [r["when_to_use"] for r in results]
-
-enriched_df.to_csv("enriched_products.csv", index=False)
-print("Done! Saved to enriched_products.csv")
+df.to_csv("enriched_products.csv", index=False, encoding="utf-8-sig")
+print(f"Done! Processed {processed} new products, skipped {skipped} already enriched.")

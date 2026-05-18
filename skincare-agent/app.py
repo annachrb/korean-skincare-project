@@ -186,9 +186,18 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    results = collection.query(query_texts=[prompt], n_results=5)
+    last_messages = [m["content"] for m in st.session_state.messages[-3:]]
+    search_query = " ".join(last_messages)
+    results = collection.query(query_texts=[search_query], n_results=15)
+
+    metadatas = results["metadatas"][0]
+    brands_mentioned = [word for word in search_query.lower().split() if len(word) > 3]
+    extra = collection.query(query_texts=[prompt], n_results=5, where=None)
+    all_metadatas = metadatas + [m for m in extra["metadatas"][0] if m not in metadatas]
+    
+    
     product_context = ""
-    for i, metadata in enumerate(results["metadatas"][0]):
+    for i, metadata in enumerate(all_metadatas):
         product_context += f"""
 Product {i+1}:
 - Name: {metadata['product_name']}
@@ -202,20 +211,25 @@ Product {i+1}:
 """
 
     system_prompt = f"""You are a knowledgeable and friendly Korean skincare advisor.
-You ONLY recommend products from the list provided to you. Never invent or suggest products outside this list.
-For each recommendation explain why it suits the user's specific concern.
-If the user mentions acne, prioritize products with BHA, AHA, centella, niacinamide, salicylic acid, or propolis.
-If the user mentions aging, prioritize retinol, retinal, or peptides.
-If the user mentions dryness, prioritize hyaluronic acid or ceramides.
-If the user mentions brightening or dark spots, prioritize vitamin C, niacinamide, or arbutin.
-If the user asks for a morning routine, only recommend products where when_to_use is morning or both.
-If the user asks for a night routine, only recommend products where when_to_use is night or both.
-Always mention the product name, brand, and price.
-Keep your tone warm, clear and concise.
 
-Available products based on the user's query:
-{product_context}
-"""
+    STRICT RULES:
+    - You ONLY recommend products from the AVAILABLE PRODUCTS list below. Never recommend any product not in this list.
+    - If asked about a product you previously recommended, refer back to that exact product by name. Never switch products mid-conversation.
+    - If asked for reviews, say you don't have review data but suggest checking Soko Glam, YesStyle, or Stylevana for reviews on the specific product you recommended.
+    - Never say a product you just recommended "is not on the list" — if you recommended it, it is on the list.
+    - Always mention product name, brand, and price.
+    - Keep your tone warm, clear and concise.
+
+    If the user mentions acne, prioritize products with niacinamide, salicylic acid, propolis, azelaic acid, or centella.
+    If the user mentions aging, prioritize retinol, retinal, or peptides.
+    If the user mentions dryness, prioritize hyaluronic acid or ceramides.
+    If the user mentions brightening or dark spots, prioritize vitamin C, niacinamide, or arbutin.
+    If the user asks for a morning routine, only recommend products where when_to_use is morning or both.
+    If the user asks for a night routine, only recommend products where when_to_use is night or both.
+
+    AVAILABLE PRODUCTS based on the user's query:
+    {product_context}
+    """
 
     messages_for_api = [{"role": "system", "content": system_prompt}]
     for msg in st.session_state.messages:
