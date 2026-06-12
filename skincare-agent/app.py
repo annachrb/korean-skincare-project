@@ -14,6 +14,28 @@ collection = chroma_client.get_collection(
     embedding_function=embedding_functions.DefaultEmbeddingFunction()
 )
 
+def is_routine_request(text):
+    keywords = ["routine", "morning routine", "night routine", "skincare routine", "full routine"]
+    return any(k in text.lower() for k in keywords)
+
+def build_routine_context(skin_context, time_of_day="morning"):
+    steps = {
+        "cleanser": f"cleanser for {skin_context}",
+        "toner": f"toner for {skin_context}",
+        "serum": f"serum for {skin_context}",
+        "moisturizer": f"moisturizer for {skin_context}",
+    }
+    if time_of_day == "morning":
+        steps["sunscreen"] = f"sunscreen SPF for {skin_context}"
+
+    routine_context = ""
+    for step, query in steps.items():
+        results = collection.query(query_texts=[query], n_results=3)
+        routine_context += f"\n## {step.upper()} OPTIONS:\n"
+        for m in results["metadatas"][0]:
+            routine_context += f"- {m['product_name']} by {m['product_brand']} ({m['price']}) | when to use: {m['when_to_use']} | skin type: {m['skin_type']}\n"
+    return routine_context
+
 st.set_page_config(
     page_title="Glow Guide",
     page_icon="🌿",
@@ -188,17 +210,19 @@ if prompt:
 
     last_messages = [m["content"] for m in st.session_state.messages[-3:]]
     search_query = " ".join(last_messages)
-    results = collection.query(query_texts=[search_query], n_results=15)
 
-    metadatas = results["metadatas"][0]
-    brands_mentioned = [word for word in search_query.lower().split() if len(word) > 3]
-    extra = collection.query(query_texts=[prompt], n_results=5, where=None)
-    all_metadatas = metadatas + [m for m in extra["metadatas"][0] if m not in metadatas]
-    
-    
-    product_context = ""
-    for i, metadata in enumerate(all_metadatas):
-        product_context += f"""
+    if is_routine_request(prompt):
+        time_of_day = "night" if "night" in prompt.lower() else "morning"
+        product_context = build_routine_context(prompt, time_of_day)
+    else:
+        results = collection.query(query_texts=[search_query], n_results=15)
+        metadatas = results["metadatas"][0]
+        extra = collection.query(query_texts=[prompt], n_results=5, where=None)
+        all_metadatas = metadatas + [m for m in extra["metadatas"][0] if m not in metadatas]
+
+        product_context = ""
+        for i, metadata in enumerate(all_metadatas):
+            product_context += f"""
 Product {i+1}:
 - Name: {metadata['product_name']}
 - Brand: {metadata['product_brand']}
